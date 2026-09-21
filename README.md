@@ -1,10 +1,37 @@
-# PolyMap
+# PolyMap 🗺️
 
-Navigation du campus de l'École Supérieure Polytechnique de Dakar — Flutter.
+**Campus navigation app for ESP Dakar — rebuilt from scratch (v2).**
 
-Implémentation du design system et des 24 écrans de la maquette Claude Design
-« PolyMap campus navigation app » (le bundle de handoff est la référence
-visuelle ; ce dépôt en est la transcription Flutter).
+[![CI/CD](https://github.com/sambaseness/polymap-v2/actions/workflows/ci-cd.yml/badge.svg?branch=main)](https://github.com/sambaseness/polymap-v2/actions/workflows/ci-cd.yml)
+[![Flutter Analyze](https://github.com/sambaseness/polymap-v2/actions/workflows/ci-cd.yml/badge.svg?branch=main&name=analyze)](https://github.com/sambaseness/polymap-v2/actions/workflows/ci-cd.yml)
+[![Flutter Tests](https://github.com/sambaseness/polymap-v2/actions/workflows/ci-cd.yml/badge.svg?branch=main&name=test)](https://github.com/sambaseness/polymap-v2/actions/workflows/ci-cd.yml)
+
+> **Status**: Map feature rebuilt from scratch — single unified `PolyMapView`, GPS tracking, real routing. Web build verified. CI/CD pipeline configured. See [DOCS/MAP_FEATURE_REPORT.md](DOCS/MAP_FEATURE_REPORT.md) for full research and implementation details.
+
+## What changed (Map Feature v2)
+
+| Before | After |
+|--------|-------|
+| Two competing map widgets (`RealCampusMap` + `CampusMap`) | Single `PolyMapView` widget |
+| Hardcoded routes, no routing algorithm | `RouteService` with OpenRouteService + fallback polylines |
+| Demo navigation data | `LocationService` with real GPS tracking |
+| Scattered data access | `MapRepository` as unified data source |
+| No location marker | `flutter_map_location_marker` with `CurrentLocationLayer` |
+
+See [DOCS/MAP_FEATURE_REPORT.md](DOCS/MAP_FEATURE_REPORT.md) for the full research report and architecture decisions.
+
+## Running Locally
+
+```bash
+# Serve the web build
+python3 -m http.server 8080 --directory build/web
+# Open http://localhost:8080
+
+# Or run with Flutter
+flutter run -d chrome
+flutter run -d linux
+flutter run -d macos
+```
 
 ## Plateformes
 
