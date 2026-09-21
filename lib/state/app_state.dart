@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../data/campus_data.dart';
 import '../data/models.dart';
 
-/// App-wide state: theme, session, the route being planned, preferences.
+/// App-wide state: theme, session, the route being planned, preferences, GPS.
 ///
 /// Uses SharedPreferences for persistence across app restarts.
 class AppState extends ChangeNotifier {
@@ -19,6 +20,7 @@ class AppState extends ChangeNotifier {
   static const _keyArDoorLabels = 'arDoorLabels';
   static const _keyVoiceGuidance = 'voiceGuidance';
   static const _keyHighContrast = 'highContrast';
+  static const _keyGpsTracking = 'gpsTracking';
 
   SharedPreferences? _prefs;
   bool _initialized = false;
@@ -59,6 +61,7 @@ class AppState extends ChangeNotifier {
     arDoorLabels = prefs.getBool(_keyArDoorLabels) ?? true;
     voiceGuidance = prefs.getBool(_keyVoiceGuidance) ?? false;
     highContrast = prefs.getBool(_keyHighContrast) ?? false;
+    gpsTrackingEnabled = prefs.getBool(_keyGpsTracking) ?? false;
   }
 
   Future<void> _savePrefs() async {
@@ -75,10 +78,11 @@ class AppState extends ChangeNotifier {
       prefs.setBool(_keyArDoorLabels, arDoorLabels),
       prefs.setBool(_keyVoiceGuidance, voiceGuidance),
       prefs.setBool(_keyHighContrast, highContrast),
+      prefs.setBool(_keyGpsTracking, gpsTrackingEnabled),
     ]);
   }
 
-  // ---- Appearance ---------------------------------------------------------
+  // ---- Appearance --------------------------------------------------------
 
   ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
@@ -119,7 +123,7 @@ class AppState extends ChangeNotifier {
     _savePrefs();
   }
 
-  // ---- Route planning -----------------------------------------------------
+  // ---- Route planning ---------------------------------------------------
 
   int _routeIndex = 0;
   RouteMode _mode = RouteMode.walk;
@@ -128,7 +132,6 @@ class AppState extends ChangeNotifier {
   RouteMode get mode => _mode;
   ComputedRoute get computedRoute => route.compute(_mode);
 
-  /// Select a quick route and reset the mode, like the prototype's `openRoute`.
   void openRoute(int index) {
     _routeIndex = index.clamp(0, CampusData.routes.length - 1);
     _mode = RouteMode.walk;
@@ -141,7 +144,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---- Floor plan ---------------------------------------------------------
+  // ---- Floor plan --------------------------------------------------------
 
   int _floor = 1;
   int get floor => _floor;
@@ -151,7 +154,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---- Favourites ---------------------------------------------------------
+  // ---- Favourites --------------------------------------------------------
 
   Set<String> _favorites = <String>{
     for (final p in CampusData.favorites) p.code,
@@ -163,7 +166,7 @@ class AppState extends ChangeNotifier {
     _savePrefs();
   }
 
-  // ---- Accessibility & AR preferences -------------------------------------
+  // ---- Accessibility & AR preferences -----------------------------------
 
   bool avoidStairs = true;
   bool arDoorLabels = true;
@@ -176,6 +179,26 @@ class AppState extends ChangeNotifier {
     _savePrefs();
   }
 
+  // ---- GPS Tracking -----------------------------------------------------
+
+  bool _gpsTrackingEnabled = false;
+  bool get gpsTrackingEnabled => _gpsTrackingEnabled;
+  set gpsTrackingEnabled(bool value) {
+    if (value == _gpsTrackingEnabled) return;
+    _gpsTrackingEnabled = value;
+    notifyListeners();
+    _savePrefs();
+  }
+
+  /// Current user position from GPS.
+  LatLng? _currentGpsPosition;
+  LatLng? get currentGpsPosition => _currentGpsPosition;
+
+  void setGpsPosition(LatLng position) {
+    _currentGpsPosition = position;
+    notifyListeners();
+  }
+
   // ---- Tab shell ----------------------------------------------------------
 
   int _tab = 0;
@@ -186,7 +209,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---- Current position (from QR scan) ------------------------------------
+  // ---- Current position (from QR scan) -----------------------------------
 
   String? _currentNodeId;
   String? get currentNodeId => _currentNodeId;

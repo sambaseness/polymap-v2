@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'app.dart';
 import 'state/app_state.dart';
+import 'services/location_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,9 +20,12 @@ void main() async {
   final appState = AppState();
   await appState.init();
 
+  // Initialize GPS location services
+  await LocationService.initialize();
+
   runApp(
-    ChangeNotifierProvider<AppState>(
-      create: (_) => appState,
+    ChangeNotifierProvider<AppState>.value(
+      value: appState,
       child: const PolyMapApp(),
     ),
   );

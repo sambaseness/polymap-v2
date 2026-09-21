@@ -19,6 +19,14 @@ dependencies:
   # Real map with OpenStreetMap tiles
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  # GPS tracking
+  geolocator: ^13.0.1
+  # Location marker on flutter_map
+  flutter_map_location_marker: ^9.0.0
+  # Routing via OpenRouteService
+  open_route_service: ^1.2.9
+  # HTTP for API calls
+  http: ^1.2.1
   # QR code scanning for indoor positioning
   mobile_scanner: ^5.2.3
   # Local persistence for user preferences

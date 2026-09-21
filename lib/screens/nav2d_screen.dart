@@ -3,16 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../data/models.dart';
+import '../data/models.dart' as models;
+import '../data/map_repository.dart';
 import '../navigation.dart';
 import '../state/app_state.dart';
 import '../theme/pm_colors.dart';
 import '../theme/pm_layout.dart';
 import '../theme/pm_text.dart';
 import '../theme/pm_tokens.dart';
-import '../widgets/campus_map.dart';
 import '../widgets/glyphs.dart';
 import '../widgets/pm_button.dart';
+import '../widgets/poly_map_view.dart';
 import 'ar/ar_calibration_screen.dart';
 
 /// 14 — Navigation 2D. Current turn, progress, switch to AR.
@@ -26,9 +27,11 @@ class Nav2dScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final pm = context.pm;
     final pad = MediaQuery.paddingOf(context);
-    final r = context.select<AppState, ComputedRoute>((s) => s.computedRoute);
+    final state = context.watch<AppState>();
+    final r = state.computedRoute;
     final progress = NavProgress.of(r);
 
+    // Side buttons: AR toggle + 2D indicator
     final sideButtons = Column(
       children: <Widget>[
         _SideButton(
@@ -48,10 +51,20 @@ class Nav2dScreen extends StatelessWidget {
       ],
     );
 
+    // Get route GPS points based on mode
+    final routePoints = switch (state.mode) {
+      models.RouteMode.walk => MapRepository.route1Walk,
+      models.RouteMode.accessible => MapRepository.route1Accessible,
+      models.RouteMode.shortest => MapRepository.route1Shortest,
+    };
+
     return Scaffold(
       body: PmMapLayout(
-        map: CampusMap(
-            roads: MapRoads.two, route: r, navigating: true, showLabels: false),
+        map: PolyMapView(
+          showUserPosition: true,
+          routePoints: routePoints,
+          onBuildingTap: null,
+        ),
         compact: (map) => Stack(
           fit: StackFit.expand,
           children: <Widget>[
@@ -314,14 +327,14 @@ class NavProgress {
     required this.fraction,
   });
 
-  final RouteStep current;
-  final RouteStep? next;
+  final models.RouteStep current;
+  final models.RouteStep? next;
   final int minutesLeft;
   final int metersLeft;
   final String eta;
   final double fraction;
 
-  static NavProgress of(ComputedRoute r) {
+  static NavProgress of(models.ComputedRoute r) {
     final steps = r.steps;
     final ci = math.min(1, steps.length - 1);
     final minutesLeft = math.max(1, r.minutes - 1);

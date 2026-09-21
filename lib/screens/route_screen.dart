@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/models.dart';
-import '../data/campus_gps.dart';
+import '../data/models.dart' as models;
+import '../data/map_repository.dart';
 import '../navigation.dart';
 import '../state/app_state.dart';
 import '../theme/pm_colors.dart';
 import '../theme/pm_layout.dart';
 import '../theme/pm_text.dart';
 import '../theme/pm_tokens.dart';
-import '../widgets/real_campus_map.dart';
 import '../widgets/glyphs.dart';
 import '../widgets/pm_button.dart';
 import '../widgets/pm_cards.dart';
 import '../widgets/pm_primitives.dart';
+import '../widgets/poly_map_view.dart';
 import 'nav2d_screen.dart';
 
 /// 13 — Aperçu itinéraire. Three variants: on foot, accessible, shortest.
@@ -28,17 +29,17 @@ class RouteScreen extends StatelessWidget {
 
     // Get route GPS points based on mode
     final routePoints = switch (state.mode) {
-      RouteMode.walk => CampusGps.route1Walk,
-      RouteMode.accessible => CampusGps.route1Accessible,
-      RouteMode.shortest => CampusGps.route1Shortest,
+      models.RouteMode.walk => MapRepository.route1Walk,
+      models.RouteMode.accessible => MapRepository.route1Accessible,
+      models.RouteMode.shortest => MapRepository.route1Shortest,
     };
 
     return Scaffold(
       body: PmMapLayout(
-        map: RealCampusMap(
+        map: PolyMapView(
           showUserPosition: false,
           routePoints: routePoints,
-          routeColor: null, // Uses default blue
+          routeColor: null,
         ),
         compact: (map) => Stack(
           fit: StackFit.expand,

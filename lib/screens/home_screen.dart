@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../data/campus_data.dart';
+import '../data/map_repository.dart';
 import '../navigation.dart';
 import '../theme/pm_colors.dart';
 import '../theme/pm_layout.dart';
 import '../theme/pm_text.dart';
 import '../theme/pm_tokens.dart';
-import '../widgets/real_campus_map.dart';
 import '../widgets/dashed_border.dart';
 import '../widgets/glyphs.dart';
 import '../widgets/pm_cards.dart';
 import '../widgets/pm_primitives.dart';
+import '../widgets/poly_map_view.dart';
 import 'directory_screen.dart';
 import 'qr_screen.dart';
 import 'search_screen.dart';
@@ -26,11 +27,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
     return PmMapLayout(
-      map: RealCampusMap(
+      map: PolyMapView(
         showUserPosition: true,
         onBuildingTap: (building) {
           // Find the matching building in CampusData and navigate
-          final index = CampusData.buildings.indexWhere(
+          final index = MapRepository.buildings.indexWhere(
             (b) => b.name == building.name,
           );
           if (index >= 0) {
