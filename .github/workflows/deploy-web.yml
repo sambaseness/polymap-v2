@@ -1,48 +1,19 @@
+# Deploy Web to GitHub Pages
+# NOTE: GitHub Pages requires a paid plan (Pro/Team). Free plan does not support it.
+# To enable this workflow, upgrade GitHub plan and configure pages.
+# Until then, deployment is handled via Vercel (see ci-cd.yml).
 name: Deploy Web to GitHub Pages
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
-  build:
+  skip:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build web
-        run: flutter build web --release --base-href "/polymap/"
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Skip GitHub Pages Deployment
+        run: |
+          echo "GitHub Pages deployment skipped — requires GitHub Pro/Team plan."
+          echo "Web deployment is handled by Vercel (see ci-cd.yml)."
+          echo "To enable: gh secret set VERCEL_TOKEN --repo=sambaseness/polymap-v2"
