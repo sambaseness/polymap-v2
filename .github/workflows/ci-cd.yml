@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-# Cancel in-progress runs for the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -15,86 +14,51 @@ env:
   FLUTTER_VERSION: "3.27.0"
 
 jobs:
-  # ─────────────────────────────────────────────
-  # JOB 1: Lint & Analyze
-  # ─────────────────────────────────────────────
   analyze:
     name: Flutter Analyze
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Run flutter analyze
-        run: flutter analyze --no-fatal-infos
-
-  # ─────────────────────────────────────────────
-  # JOB 2: Unit & Widget Tests
-  # ─────────────────────────────────────────────
   test:
     name: Flutter Tests
     runs-on: ubuntu-latest
     needs: analyze
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - run: flutter pub get
+      - run: flutter test --reporter=expanded
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Run tests
-        run: flutter test --reporter=expanded
-
-  # ─────────────────────────────────────────────
-  # JOB 3: Build Web
-  # ─────────────────────────────────────────────
   build-web:
-    name: Build Web (WASM)
+    name: Build Web
     runs-on: ubuntu-latest
     needs: analyze
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build web (WASM)
-        run: flutter build web --wasm
-
-      - name: Upload web build artifact
-        uses: actions/upload-artifact@v4
+      - run: flutter pub get
+      - run: flutter build web --release
+      - uses: actions/upload-artifact@v4
         with:
           name: polymap-web-build
           path: build/web/
 
-  # ─────────────────────────────────────────────
-  # JOB 4: Deploy to Vercel (Production)
-  # ─────────────────────────────────────────────
   deploy-production:
     name: Deploy to Vercel (Production)
     runs-on: ubuntu-latest
@@ -102,29 +66,15 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.VERCEL_TOKEN != ''
     environment: production
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm install -g vercel@latest
+      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel@latest
-
-      - name: Pull Vercel config
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-
-  # ─────────────────────────────────────────────
-  # JOB 5: Deploy to Vercel (Staging)
-  # ─────────────────────────────────────────────
   deploy-staging:
     name: Deploy to Vercel (Staging)
     runs-on: ubuntu-latest
@@ -132,48 +82,34 @@ jobs:
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push' && secrets.VERCEL_TOKEN != ''
     environment: staging
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm install -g vercel@latest
+      - run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      - run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+  deploy-skip:
+    name: Skip Deployment
+    runs-on: ubuntu-latest
+    needs: [test, build-web]
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && github.event_name == 'push' && secrets.VERCEL_TOKEN == ''
+    steps:
+      - run: echo "VERCEL_TOKEN not configured. To enable Vercel deployment, set the secret."
 
-      - name: Pull Vercel config
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-
-  # ─────────────────────────────────────────────
-  # JOB 6: Code Coverage Report
-  # ─────────────────────────────────────────────
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Run tests with coverage
-        run: |
-          flutter test --coverage
-          bash <(curl -s https://codecov.io/bash) || echo "Codecov upload failed (non-critical)"
+      - run: flutter pub get
+      - run: flutter test --coverage
+      - run: curl -s https://codecov.io/bash || echo "Codecov upload failed (non-critical)"
